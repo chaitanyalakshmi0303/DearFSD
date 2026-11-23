@@ -20,9 +20,16 @@ const registerUser = async (req, res) => {
       email,
       password: hashedPassword,
     });
+    const sanitizedUser = {
+      _id: newUser._id,
+      name: newUser.name,
+      email: newUser.email,
+      createdAt: newUser.createdAt,
+      updatedAt: newUser.updatedAt,
+    };
     res
       .status(201)
-      .json({ message: "User registered successfully", data: newUser });
+      .json({ message: "User registered successfully", data: sanitizedUser });
   } catch (err) {
     res.status(500).json({ message: "Failed to register user", error: err.message });
   }
