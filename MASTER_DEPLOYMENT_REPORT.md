@@ -15,10 +15,11 @@
 | **Render Account & Blueprint** | `chaitanyalakshmi0303` (Blueprint ID: `exs-dc1rkl6c6qcc73blp81g`) |
 | **Render Backend Services** | ✅ **8 / 8 Services Deployed, Live, CRUD Tested & MongoDB Verified** |
 | **MERN Full-Stack Integration** | ✅ **Live & Verified (Vercel Frontend directly wired to Render Backend via `VITE_API_URL`)** |
+| **Security Audit Status** | ✅ **Bcrypt compare verified, password omitted from API, secrets sanitized** |
 
 ---
 
-## 2. Initial Migration Record & Post-Migration Fixes
+## 2. Initial Migration Record & Post-Migration Changes
 
 ### A. Initial Migration Audit
 The original repository was cloned and verified without altering its directory structure:
@@ -27,9 +28,9 @@ The original repository was cloned and verified without altering its directory s
 - **Integrity Check:** 0 diff against upstream. Complete SHA-256 hashes are recorded in `migration_verification.csv`.
 
 ### B. Intentional Code & Configuration Fixes
-1. **MVC Auth Registration Schema Alignment (`mvc_auth_app`):**
-   - *Problem:* `userRoutes.js` bypassed `userController.js` and executed `User.create({ username, email, password })`, failing Mongoose validation because `userModel.js` requires `name`. Additionally, passwords were not bcrypt-hashed on that path.
-   - *Resolution:* Linked `registerUser` in `routes/userRoutes.js`, mapped `displayName = username || name` in `controller/userController.js`, and hashed passwords with `bcrypt.hash(password, 10)` before insertion. (Commits: `feec9cc`, `085fb19`).
+1. **MVC Auth Schema Alignment & Security Sanitization (`mvc_auth_app`):**
+   - *Problem:* `userRoutes.js` bypassed `userController.js` and executed `User.create({ username, email, password })`, failing Mongoose validation because `userModel.js` requires `name`. In addition, passwords were not bcrypt-hashed on that path, and raw user objects including password hashes were returned in responses.
+   - *Resolution:* Linked `registerUser` in `routes/userRoutes.js`, mapped `displayName = username || name` in `controller/userController.js`, and hashed passwords with `bcrypt.hash(password, 10)`. Sanitized registration response to explicitly delete and omit the password field from the return payload. (Commits: `feec9cc`, `085fb19`, `6766b44`).
 2. **MERN CRUD Frontend-to-Backend Connectivity (`mern-crud-app`):**
    - *Problem:* `src/config.js` in `mern-crud-frontend` defaulted to an external template backend URL (`full-stack-development-lab.onrender.com`).
    - *Resolution:* Injected `VITE_API_URL = "https://mern-crud-backend-mjvo.onrender.com"` into Vercel project environment variables and re-triggered production build. Verified that client bundle `assets/index-D0g411gT.js` incorporates the personal Render domain.
@@ -62,23 +63,27 @@ All 8 backend services are deployed on Render (Blueprint: `DearFSD`, ID: `exs-dc
 | No. | Service Name | Service ID | Live Render URL | Tested Endpoints | HTTP Code | MongoDB / Persistence | Functional Test Results | Remaining Errors |
 |---:|---|---|---|---|:---:|:---:|---|:---:|
 | 1 | **file-persistent-app** | `srv-dc1rlhff3r2c73diflpg` | [https://file-persistent-app-rfxe.onrender.com](https://file-persistent-app-rfxe.onrender.com) | `GET /`<br>`GET /api/v1/faculty`<br>`POST /api/v1/faculty` | `200 OK`<br>`200 OK`<br>`201 Created` | Local JSON (`data/faculty.json`) | **CRUD Verified:** Created ID 7 ("Dr. Alan Turing"); retrieved faculty list. | None |
-| 2 | **mongodb-express-app** | `srv-dc1rlhnf3r2c73diflsg` | [https://mongodb-express-app-uqcd.onrender.com](https://mongodb-express-app-uqcd.onrender.com) | `GET /`<br>`POST /api/v1/books`<br>`GET /api/v1/books` | `200 OK`<br>`201 Created`<br>`200 OK` | Connected (`booksDB`) | **CRUD Verified:** Created book "Clean Code" (`_id: 6b03c2b5b97056d2003c7663`); retrieved from MongoDB. | None |
-| 3 | **mongodb-mongoose-movies-app** | `srv-dc1rlhff3r2c73diflr0` | [https://mongodb-mongoose-movies-app-vm3b.onrender.com](https://mongodb-mongoose-movies-app-vm3b.onrender.com) | `GET /`<br>`POST /api/v1/movie`<br>`GET /api/v1/movie/:id` | `200 OK`<br>`200 OK`<br>`200 OK` | Connected (`movieDB`) | **CRUD Verified:** Created movie "Inception" (`_id: 6b03c3b536a57e0c1e9acb55`); fetched details by ID. | None |
-| 4 | **mvc-auth-app** | `srv-dc1rlhnf3r2c73diflt0` | [https://mvc-auth-app-qn4j.onrender.com](https://mvc-auth-app-qn4j.onrender.com) | `POST /api/users/register`<br>`POST /api/users/login`<br>`GET /api/todos` | `201 Created`<br>`200 OK`<br>`200 OK` | Connected (`authDB`) | **Auth Verified:** Registered user; verified `$2b$10$` bcrypt hash in DB; verified JWT issuance; accessed protected `/api/todos` with bearer token. | None |
-| 5 | **mvc-express-app** | `srv-dc1rlhnf3r2c73difltg` | [https://mvc-express-app-o9oa.onrender.com](https://mvc-express-app-o9oa.onrender.com) | `GET /`<br>`POST /api/v1/movie`<br>`GET /api/v1/movie` | `200 OK`<br>`200 OK`<br>`200 OK` | Connected (`movieDB`) | **CRUD Verified:** Created movie "Interstellar" (`_id: 6b03c3b89984089b2ee895a4`); retrieved array. | None |
+| 2 | **mongodb-express-app** | `srv-dc1rlhnf3r2c73diflsg` | [https://mongodb-express-app-uqcd.onrender.com](https://mongodb-express-app-uqcd.onrender.com) | `GET /`<br>`POST /api/v1/books`<br>`GET /api/v1/books` | `200 OK`<br>`201 Created`<br>`200 OK` | Connected (`booksDB`) | **CRUD Verified:** Created book "Clean Code" (`_id: 6b03c2b5b9...`); retrieved from MongoDB. | None |
+| 3 | **mongodb-mongoose-movies-app** | `srv-dc1rlhff3r2c73diflr0` | [https://mongodb-mongoose-movies-app-vm3b.onrender.com](https://mongodb-mongoose-movies-app-vm3b.onrender.com) | `GET /`<br>`POST /api/v1/movie`<br>`GET /api/v1/movie/:id` | `200 OK`<br>`200 OK`<br>`200 OK` | Connected (`movieDB`) | **CRUD Verified:** Created movie "Inception" (`_id: 6b03c3b536...`); fetched details by ID. | None |
+| 4 | **mvc-auth-app** | `srv-dc1rlhnf3r2c73diflt0` | [https://mvc-auth-app-qn4j.onrender.com](https://mvc-auth-app-qn4j.onrender.com) | `POST /api/users/register`<br>`POST /api/users/login`<br>`GET /api/todos` | `201 Created`<br>`200 OK`<br>`200 OK` | Connected (`authDB`) | **Auth Verified:** Registered user; confirmed bcrypt hash in DB; verified JWT issuance; accessed protected `/api/todos` with bearer token. | None |
+| 5 | **mvc-express-app** | `srv-dc1rlhnf3r2c73difltg` | [https://mvc-express-app-o9oa.onrender.com](https://mvc-express-app-o9oa.onrender.com) | `GET /`<br>`POST /api/v1/movie`<br>`GET /api/v1/movie` | `200 OK`<br>`200 OK`<br>`200 OK` | Connected (`movieDB`) | **CRUD Verified:** Created movie "Interstellar" (`_id: 6b03c3b899...`); retrieved array. | None |
 | 6 | **template-engine-ejs-app** | `srv-dc1rlhnf3r2c73diflrg` | [https://template-engine-ejs-app-rggc.onrender.com](https://template-engine-ejs-app-rggc.onrender.com) | `GET /`<br>`GET /product-form` | `200 OK`<br>`200 OK` | Connected (`productsDB`) | **SSR Verified:** EJS view engine renders full HTML catalog; `/product-form` renders input form. | None |
 | 7 | **express-middleware-api** | `srv-dc1rlhff3r2c73diflq0` | [https://express-middleware-api-1efr.onrender.com](https://express-middleware-api-1efr.onrender.com) | `GET /`<br>`POST /api/v1/patients`<br>`GET /api/v1/patients` | `200 OK`<br>`200 OK`<br>`200 OK` | In-memory & fs logging (`server.log`) | **Middleware Verified:** Custom logging & validation middleware executed; Created patient "John Doe". | None |
-| 8 | **mern-crud-backend** | `srv-dc1rlhnf3r2c73difls0` | [https://mern-crud-backend-mjvo.onrender.com](https://mern-crud-backend-mjvo.onrender.com) | `POST /api/v1/posts`<br>`GET /api/v1/posts/:id`<br>`PUT /api/v1/posts/:id`<br>`DELETE /api/v1/posts/:id` | `201 Created`<br>`200 OK`<br>`200 OK`<br>`200 OK` | Connected (`mernDB`) | **Full CRUD Lifecycle Verified:** Created `_id: 6b03d2f015f34641363c085a`; read by ID; updated title; deleted; verified 404. | None |
+| 8 | **mern-crud-backend** | `srv-dc1rlhnf3r2c73difls0` | [https://mern-crud-backend-mjvo.onrender.com](https://mern-crud-backend-mjvo.onrender.com) | `POST /api/v1/posts`<br>`GET /api/v1/posts/:id`<br>`PUT /api/v1/posts/:id`<br>`DELETE /api/v1/posts/:id` | `201 Created`<br>`200 OK`<br>`200 OK`<br>`200 OK` | Connected (`mernDB`) | **Full CRUD Lifecycle Verified:** Created `_id: 6b03d2f015...`; read by ID; updated title; deleted; verified 404. | None |
 
 ---
 
-## 5. Security, CORS, & Full-Stack Integration Testing
+## 5. Security & Authentication Verification
 
-### A. Bcrypt Password Hashing & JWT Verification
-- Tested registration on `mvc-auth-app`:
-  - **Saved Password in DB:** `$2b$10$9SHCv2OGCc1zEq/lAIOtzeF9aVMQHCi.MrpZj7OqeaESOjQyMF29a`
-  - **Bcrypt Hash Format:** Regex `^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$` evaluates to **True**. Passwords are never stored in plaintext.
-  - **JWT Signature:** Verified using `jsonwebtoken` signed with `JWT_SECRET`. Returned valid bearer token used to authenticate requests to `/api/todos`.
+### A. Bcrypt Password Comparison & Login Verification
+Testing confirmed that password authentication relies strictly on `bcrypt.compare` and handles both valid and invalid credentials accurately:
+- **Registration Missing Password:** Evaluated HTTP `400 Bad Request` (`All fields are required`).
+- **Registration Missing Email:** Evaluated HTTP `400 Bad Request` (`All fields are required`).
+- **Registration with Valid Input:** Evaluated HTTP `201 Created`.
+- **Password Omission in Response:** Inspected registration return payload (`data`); verified `password` attribute is completely absent (`null` / deleted).
+- **Login with Incorrect Password:** Evaluated HTTP `401 Unauthorized` (`Invalid email or password`).
+- **Login with Correct Password:** Evaluated HTTP `200 OK`. Issued valid signed JSON Web Token (JWT).
+- **Bcrypt Hash Format:** Confirmed hashed strings in database conform to standard modular crypt format (`$2b$10$...`). Passwords are never stored in plaintext.
 
 ### B. CORS Configuration Audit
 - `mern-crud-backend` incorporates `cors()` middleware.
@@ -92,19 +97,19 @@ All 8 backend services are deployed on Render (Blueprint: `DearFSD`, ID: `exs-dc
 
 ---
 
-## 6. Environment Variables Audit
+## 6. Environment Variables Audit (Credentials Masked)
 
-| Application / Service | Key | Value / Source | Scope |
-|---|---|---|---|
-| `mern-crud-frontend` (Vercel) | `VITE_API_URL` | `https://mern-crud-backend-mjvo.onrender.com` | Production, Preview, Dev |
-| `file-persistent-app` (Render) | `PORT` | `10000` | Runtime |
-| `mongodb-express-app` (Render) | `PORT`<br>`MONGO_URL`<br>`DB_NAME` | `10000`<br>`mongodb+srv://...`<br>`booksDB` | Runtime |
-| `mongodb-mongoose-movies-app` (Render) | `PORT`<br>`MONGO_URL`<br>`DB_NAME` | `10000`<br>`mongodb+srv://...`<br>`movieDB` | Runtime |
-| `mvc-auth-app` (Render) | `PORT`<br>`MONGO_URL`<br>`DB_NAME`<br>`JWT_SECRET` | `10000`<br>`mongodb+srv://...`<br>`authDB`<br>`default_jwt_secret_dev_key_12345` | Runtime |
-| `mvc-express-app` (Render) | `PORT`<br>`MONGO_URL`<br>`DB_NAME` | `10000`<br>`mongodb+srv://...`<br>`movieDB` | Runtime |
-| `template-engine-ejs-app` (Render) | `PORT`<br>`MONGO_URI`<br>`DB_NAME` | `10000`<br>`mongodb+srv://...`<br>`productsDB` | Runtime |
-| `express-middleware-api` (Render) | `PORT` | `10000` | Runtime |
-| `mern-crud-backend` (Render) | `PORT`<br>`MONGO_URI`<br>`DB_NAME` | `10000`<br>`mongodb+srv://...`<br>`mernDB` | Runtime |
+| Application / Service | Key | Configured Scope | Status |
+|---|---|---|:---:|
+| `mern-crud-frontend` (Vercel) | `VITE_API_URL` | Production, Preview, Dev | ✅ Active (`https://mern-crud-backend-mjvo.onrender.com`) |
+| `file-persistent-app` (Render) | `PORT` | Runtime (`10000`) | ✅ Active |
+| `mongodb-express-app` (Render) | `PORT`, `MONGO_URL`, `DB_NAME` | Runtime (`booksDB`, MongoDB URI masked) | ✅ Active |
+| `mongodb-mongoose-movies-app` (Render) | `PORT`, `MONGO_URL`, `DB_NAME` | Runtime (`movieDB`, MongoDB URI masked) | ✅ Active |
+| `mvc-auth-app` (Render) | `PORT`, `MONGO_URL`, `DB_NAME`, `JWT_SECRET` | Runtime (`authDB`, JWT Secret masked) | ✅ Active |
+| `mvc-express-app` (Render) | `PORT`, `MONGO_URL`, `DB_NAME` | Runtime (`movieDB`, MongoDB URI masked) | ✅ Active |
+| `template-engine-ejs-app` (Render) | `PORT`, `MONGO_URI`, `DB_NAME` | Runtime (`productsDB`, MongoDB URI masked) | ✅ Active |
+| `express-middleware-api` (Render) | `PORT` | Runtime (`10000`) | ✅ Active |
+| `mern-crud-backend` (Render) | `PORT`, `MONGO_URI`, `DB_NAME` | Runtime (`mernDB`, MongoDB URI masked) | ✅ Active |
 
 ---
 
